@@ -22,29 +22,43 @@ func (s *Server) ExecuteCommand(request *pb.ExecuteCommandRequest, stream pb.Com
 	args := strings.Split(request.GetCommand(), " ")
 
 	cmd := exec.Command(args[0], args...)
+	r, _ := cmd.StdoutPipe()
+	cmd.Stderr = cmd.Stdout
 
-	stderr, err := cmd.StderrPipe()
+	done := make(chan struct{})
+
+	scanner := bufio.NewScanner(r)
+
+	go func() {
+		for scanner.Scan() {
+			line := scanner.Text()
+			logrus.Println(line)
+
+			message := pb.ExecuteCommandResponse{
+				Response: line,
+				Error:    nil,
+			}
+
+			if err := stream.Send(&message); err != nil {
+				logrus.Println("[-] Error while sending the stream: %v", err)
+			}
+		}
+
+		done <- struct{}{}
+	}()
+
+	err := cmd.Start()
 	if err != nil {
-		logrus.Printf("[-] StderrPipe error: %v\n", err)
+		logrus.Println(err)
 		return err
 	}
-	cmd.Start()
 
-	scanner := bufio.NewScanner(stderr)
-	scanner.Split(bufio.ScanWords)
+	<-done
 
-	for scanner.Scan() {
-		message := scanner.Text()
-		logrus.Println(message)
-
-		response := pb.ExecuteCommandResponse{
-			Response: message,
-			Error:    nil,
-		}
-
-		if err := stream.Send(&response); err != nil {
-			logrus.Printf("[-] Error while sending stream: %v\n", err)
-		}
+	err = cmd.Wait()
+	if err != nil {
+		logrus.Println(err)
+		return err
 	}
 
 	return nil
