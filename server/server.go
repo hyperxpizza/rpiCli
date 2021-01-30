@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"os/exec"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	pb "github.com/hyperxpizza/rpiCli/grpc"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 type Server struct {
@@ -72,15 +74,15 @@ func main() {
 		logrus.Fatalf("[-] Failed to listen: %v\n", err)
 	}
 
-	/*
-		path := config.Server.CertPath
-		creds, err := credentials.NewServerTLSFromFile(path+"/server-cert.pem", path+"/server-key.pem")
-		if err != nil {
-			log.Fatal("cannot load TLS credentials: ", err)
-		}
-	*/
+	path := config.Server.CertPath
+	creds, err := credentials.NewServerTLSFromFile(path+"/server-cert.pem", path+"/server-key.pem")
+	if err != nil {
+		log.Fatalf("[-] Cannot load TLS credentials: %v\n", err)
+	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.Creds(creds),
+	)
 	pb.RegisterCommandServiceServer(grpcServer, &Server{})
 	logrus.Printf("[+] Server running at: %s:%d", config.Server.Host, config.Server.Port)
 	if err := grpcServer.Serve(lis); err != nil {
