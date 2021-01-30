@@ -14,8 +14,9 @@ type grpcServerConfig struct {
 }
 
 type grpcClientConfig struct {
-	Host string
-	Port int64
+	Host     string
+	Port     int64
+	CertPath string
 }
 
 // Config struct
@@ -55,11 +56,12 @@ func Init(path string) Config {
 	//grpcServer
 	setConfigItem("server.host", "localhost")
 	setConfigItem("server.port", 9999)
-	setConfigItem("server.certPath", cwd+"/server/cert")
+	setConfigItem("server.certPath", cwd+"/cert")
 
 	//grpcClient
-	setConfigItem("server.host", "localhost")
-	setConfigItem("server.port", 9999)
+	setConfigItem("client.host", "localhost")
+	setConfigItem("client.port", 9999)
+	setConfigItem("client.certPath", cwd+"/cert")
 
 	return toStruct()
 
