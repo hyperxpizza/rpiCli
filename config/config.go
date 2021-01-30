@@ -40,6 +40,7 @@ func Init(path string) Config {
 	}
 
 	viper.AddConfigPath(cwd)
+	viper.AddConfigPath("/home/hyperxpizza/programowanie/golang/rpiCli")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

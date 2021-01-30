@@ -1,0 +1,7 @@
+grpcServer:
+  host: "localhost"
+  port: 9999
+  certPath: "./cert"
+grpcClient:
+  host: "localhost"
+  port: 9999
