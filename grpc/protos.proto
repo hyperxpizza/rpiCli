@@ -3,7 +3,7 @@ syntax = "proto3";
 option go_package = "github.com/hyperxpizza/rpiCli/grpc";
 
 service CommandService {
-    rpc ExecuteCommand(ExecuteCommandRequest) returns (ExecuteCommandResponse) {}
+    rpc ExecuteCommand(ExecuteCommandRequest) returns (stream ExecuteCommandResponse) {}
 }
 
 message ExecuteCommandRequest {

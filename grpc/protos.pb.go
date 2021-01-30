@@ -202,15 +202,15 @@ var file_grpc_protos_proto_rawDesc = []byte{
 	0x72, 0x6f, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61,
 	0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67,
-	0x65, 0x32, 0x55, 0x0a, 0x0e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x53, 0x65, 0x72, 0x76,
-	0x69, 0x63, 0x65, 0x12, 0x43, 0x0a, 0x0e, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x43, 0x6f,
+	0x65, 0x32, 0x57, 0x0a, 0x0e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x53, 0x65, 0x72, 0x76,
+	0x69, 0x63, 0x65, 0x12, 0x45, 0x0a, 0x0e, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x43, 0x6f,
 	0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x12, 0x16, 0x2e, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x43,
 	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x17, 0x2e,
 	0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x24, 0x5a, 0x22, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x79, 0x70, 0x65, 0x72, 0x78, 0x70, 0x69, 0x7a,
-	0x7a, 0x61, 0x2f, 0x72, 0x70, 0x69, 0x43, 0x6c, 0x69, 0x2f, 0x67, 0x72, 0x70, 0x63, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x30, 0x01, 0x42, 0x24, 0x5a, 0x22, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x79, 0x70, 0x65, 0x72, 0x78, 0x70,
+	0x69, 0x7a, 0x7a, 0x61, 0x2f, 0x72, 0x70, 0x69, 0x43, 0x6c, 0x69, 0x2f, 0x67, 0x72, 0x70, 0x63,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -317,7 +317,7 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type CommandServiceClient interface {
-	ExecuteCommand(ctx context.Context, in *ExecuteCommandRequest, opts ...grpc.CallOption) (*ExecuteCommandResponse, error)
+	ExecuteCommand(ctx context.Context, in *ExecuteCommandRequest, opts ...grpc.CallOption) (CommandService_ExecuteCommandClient, error)
 }
 
 type commandServiceClient struct {
@@ -328,59 +328,86 @@ func NewCommandServiceClient(cc grpc.ClientConnInterface) CommandServiceClient {
 	return &commandServiceClient{cc}
 }
 
-func (c *commandServiceClient) ExecuteCommand(ctx context.Context, in *ExecuteCommandRequest, opts ...grpc.CallOption) (*ExecuteCommandResponse, error) {
-	out := new(ExecuteCommandResponse)
-	err := c.cc.Invoke(ctx, "/CommandService/ExecuteCommand", in, out, opts...)
+func (c *commandServiceClient) ExecuteCommand(ctx context.Context, in *ExecuteCommandRequest, opts ...grpc.CallOption) (CommandService_ExecuteCommandClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_CommandService_serviceDesc.Streams[0], "/CommandService/ExecuteCommand", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &commandServiceExecuteCommandClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type CommandService_ExecuteCommandClient interface {
+	Recv() (*ExecuteCommandResponse, error)
+	grpc.ClientStream
+}
+
+type commandServiceExecuteCommandClient struct {
+	grpc.ClientStream
+}
+
+func (x *commandServiceExecuteCommandClient) Recv() (*ExecuteCommandResponse, error) {
+	m := new(ExecuteCommandResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // CommandServiceServer is the server API for CommandService service.
 type CommandServiceServer interface {
-	ExecuteCommand(context.Context, *ExecuteCommandRequest) (*ExecuteCommandResponse, error)
+	ExecuteCommand(*ExecuteCommandRequest, CommandService_ExecuteCommandServer) error
 }
 
 // UnimplementedCommandServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedCommandServiceServer struct {
 }
 
-func (*UnimplementedCommandServiceServer) ExecuteCommand(context.Context, *ExecuteCommandRequest) (*ExecuteCommandResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ExecuteCommand not implemented")
+func (*UnimplementedCommandServiceServer) ExecuteCommand(*ExecuteCommandRequest, CommandService_ExecuteCommandServer) error {
+	return status.Errorf(codes.Unimplemented, "method ExecuteCommand not implemented")
 }
 
 func RegisterCommandServiceServer(s *grpc.Server, srv CommandServiceServer) {
 	s.RegisterService(&_CommandService_serviceDesc, srv)
 }
 
-func _CommandService_ExecuteCommand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExecuteCommandRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _CommandService_ExecuteCommand_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ExecuteCommandRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(CommandServiceServer).ExecuteCommand(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/CommandService/ExecuteCommand",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CommandServiceServer).ExecuteCommand(ctx, req.(*ExecuteCommandRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(CommandServiceServer).ExecuteCommand(m, &commandServiceExecuteCommandServer{stream})
+}
+
+type CommandService_ExecuteCommandServer interface {
+	Send(*ExecuteCommandResponse) error
+	grpc.ServerStream
+}
+
+type commandServiceExecuteCommandServer struct {
+	grpc.ServerStream
+}
+
+func (x *commandServiceExecuteCommandServer) Send(m *ExecuteCommandResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 var _CommandService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "CommandService",
 	HandlerType: (*CommandServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "ExecuteCommand",
-			Handler:    _CommandService_ExecuteCommand_Handler,
+			StreamName:    "ExecuteCommand",
+			Handler:       _CommandService_ExecuteCommand_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "grpc/protos.proto",
 }
