@@ -44,7 +44,10 @@ func (s *Server) ExecuteCommand(request *pb.ExecuteCommandRequest, stream pb.Com
 			}
 
 			if err := stream.Send(&message); err != nil {
-				logrus.Println("[-] Error while sending the stream: %v", err)
+				logrus.Println(err)
+				if err.Error() == "rpc error: code = Unavailable desc = transport is closing" {
+					return
+				}
 			}
 		}
 
