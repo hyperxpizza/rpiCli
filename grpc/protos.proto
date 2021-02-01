@@ -3,7 +3,8 @@ syntax = "proto3";
 option go_package = "github.com/hyperxpizza/rpiCli/grpc";
 
 service CommandService {
-    rpc ExecuteCommand(ExecuteCommandRequest) returns (stream ExecuteCommandResponse) {}
+    rpc ExecuteCommand(ExecuteCommandRequest) returns (stream ExecuteCommandResponse) {};
+    rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse) {};
 }
 
 message ExecuteCommandRequest {
@@ -19,4 +20,21 @@ message Error {
     string code = 1;
     string message = 2;
 }
-  
+
+message FileInfo {
+    string filename = 1;
+    string filetype = 2;
+}
+
+message UploadFileRequest {
+    oneof data {
+        FileInfo info = 1;
+        bytes chunk_data = 2;
+    }
+}
+
+message UploadFileResponse {
+    string id = 1;
+    uint32 size =2;
+    Error error = 3; 
+}
