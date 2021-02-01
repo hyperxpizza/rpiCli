@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -53,6 +54,8 @@ func main() {
 	client := pb.NewCommandServiceClient(connection)
 	if *interactive {
 		interactiveCli(client, address)
+	} else if *fileInput != "" {
+
 	}
 
 }
@@ -91,4 +94,14 @@ func interactiveCli(client pb.CommandServiceClient, address string) {
 		}
 
 	}
+}
+
+func loadFile(path string) string {
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	text := string(content)
+	return text
 }
