@@ -5,14 +5,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
 	"github.com/TwinProduction/go-color"
 	"github.com/hyperxpizza/rpiCli/config"
 	pb "github.com/hyperxpizza/rpiCli/grpc"
+	"github.com/hyperxpizza/rpiCli/helpers"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -55,7 +54,8 @@ func main() {
 	if *interactive {
 		interactiveCli(client, address)
 	} else if *fileInput != "" {
-
+		payload := helpers.LoadFile(*fileInput)
+		sendPayload(client, payload)
 	}
 
 }
@@ -80,28 +80,26 @@ func interactiveCli(client pb.CommandServiceClient, address string) {
 			logrus.Fatalf("[-] ExecuteCommand error: %v\n", err)
 		}
 
-		for {
-			response, err := stream.Recv()
-			if err == io.EOF {
-				break
-			}
-
-			if err != nil {
-				logrus.Fatal(err)
-			}
-
-			fmt.Println(response.Response)
-		}
+		helpers.PrintStream(stream)
 
 	}
 }
 
-func loadFile(path string) string {
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		logrus.Fatal(err)
+func sendPayload(client pb.CommandServiceClient, payload string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	fmt.Printf("Payload in sendPayload: %s\n", payload)
+
+	fmt.Print(color.Ize(color.Green, fmt.Sprintf("[*] Sending payload: %s", payload)))
+	request := pb.ExecuteCommandRequest{
+		Command: payload,
 	}
 
-	text := string(content)
-	return text
+	stream, err := client.ExecuteCommand(ctx, &request)
+	if err != nil {
+		logrus.Fatalf("[-] ExecuteCommand error: %v\n", err)
+	}
+
+	helpers.PrintStream(stream)
 }
