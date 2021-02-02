@@ -2,20 +2,26 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"os/exec"
 	"strings"
 
 	"github.com/hyperxpizza/rpiCli/config"
 	pb "github.com/hyperxpizza/rpiCli/grpc"
+	"github.com/hyperxpizza/rpiCli/server/filestorage"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 type Server struct {
-	pb.UnimplementedCommandServiceServer
+	//pb.UnimplementedCommandServiceServer
+	*filestorage.FileStorage
 }
+
+const maxFileSize = 1 << 20
 
 func (s *Server) ExecuteCommand(request *pb.ExecuteCommandRequest, stream pb.CommandService_ExecuteCommandServer) error {
 	// get bash command and split it into an array
@@ -73,6 +79,69 @@ func (s *Server) ExecuteCommand(request *pb.ExecuteCommandRequest, stream pb.Com
 	return nil
 }
 
+func (s *Server) UploadFile(stream pb.CommandService_UploadFileServer) error {
+	request, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+
+	fileName := request.GetInfo().GetFilename()
+	fileType := request.GetInfo().GetFiletype()
+
+	logrus.Printf(fmt.Sprintf("Recieving file: %s.%s", fileName, fileType))
+
+	fileData := bytes.Buffer{}
+	fileSize := 0
+
+	logrus.Println("[*] Recieving data...")
+	for {
+		request, err := stream.Recv()
+		if err == io.EOF {
+			logrus.Println("[*] No more data")
+			break
+		}
+
+		if err != nil {
+			return err
+		}
+
+		chunk := request.GetChunkData()
+		size := len(chunk)
+
+		logrus.Println(fmt.Sprintf("[+] Recieved a chunk with size: %d", size))
+
+		fileSize += size
+
+		if fileSize > maxFileSize {
+			return fmt.Errorf(fmt.Sprintf("File is too large: %d > %d", size, maxFileSize))
+		}
+
+		_, err = fileData.Write(chunk)
+		if err != nil {
+			return err
+		}
+	}
+
+	name, err := s.FileStorage.Save(fileName, fileType, fileData)
+	if err != nil {
+		return err
+	}
+
+	response := &pb.UploadFileResponse{
+		Id:    name,
+		Size:  uint32(fileSize),
+		Error: nil,
+	}
+
+	err = stream.SendAndClose(response)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 func main() {
 	config := config.Init("")
 
@@ -93,7 +162,9 @@ func main() {
 		)
 	*/
 	grpcServer := grpc.NewServer()
-	pb.RegisterCommandServiceServer(grpcServer, &Server{})
+	pb.RegisterCommandServiceServer(grpcServer, &Server{
+		filestorage.NewFileStorage("/uploads"),
+	})
 	logrus.Printf("[+] Server running at: %s:%d", config.Server.Host, config.Server.Port)
 	if err := grpcServer.Serve(lis); err != nil {
 		logrus.Printf("[-] Failed to serve: %v", err)
