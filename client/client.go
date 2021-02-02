@@ -5,8 +5,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"time"
+
+	"path/filepath"
 
 	"github.com/TwinProduction/go-color"
 	"github.com/hyperxpizza/rpiCli/config"
@@ -19,11 +22,13 @@ import (
 var interactive *bool
 var fileOutput *string
 var fileInput *string
+var fileUpload *string
 
 func init() {
 	interactive = flag.Bool("interactive", false, "If set, run client in an interactive mode.")
 	fileOutput = flag.String("fileOutput", "", "Save output to file. Example: --fileOutput=example.txt")
 	fileInput = flag.String("fileInput", "", "Run bash from input file. Example: --fileInput=script.sh")
+	fileUpload = flag.String("fileUpload", "", "Upload file. Example: --fileUpload=/path/to/file")
 
 	flag.Parse()
 }
@@ -56,6 +61,8 @@ func main() {
 	} else if *fileInput != "" {
 		payload := helpers.LoadFile(*fileInput)
 		sendPayload(client, payload)
+	} else if *fileUpload != "" {
+		upload(client, *fileUpload)
 	}
 
 }
@@ -102,4 +109,68 @@ func sendPayload(client pb.CommandServiceClient, payload string) {
 	}
 
 	helpers.PrintStream(stream)
+}
+
+func upload(client pb.CommandServiceClient, path string) {
+	file, err := os.Open(path)
+	if err != nil {
+		logrus.Fatalf("Can not open file: %w\n", err)
+	}
+
+	defer file.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	stream, err := client.UploadFile(ctx)
+	if err != nil {
+		logrus.Fatalf("Can not upload file: %w\n", err)
+	}
+
+	request := &pb.UploadFileRequest{
+		Data: &pb.UploadFileRequest_Info{
+			Info: &pb.FileInfo{
+				Filename: "file",
+				Filetype: filepath.Ext(path),
+			},
+		},
+	}
+
+	err = stream.Send(request)
+	if err != nil {
+		logrus.Fatal("cannot send image info to server: ", err, stream.RecvMsg(nil))
+	}
+
+	reader := bufio.NewReader(file)
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := reader.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			logrus.Fatalf("Can not read chunk to buffer: %w", err)
+		}
+
+		request := &pb.UploadFileRequest{
+			Data: &pb.UploadFileRequest_ChunkData{
+				ChunkData: buffer[:n],
+			},
+		}
+
+		stream.Send(request)
+
+		if err != nil {
+			logrus.Fatalf("Can not send chunk to server: %w\n", err)
+		}
+	}
+
+	response, err := stream.CloseAndRecv()
+	if err != nil {
+		logrus.Fatalf("Can not recieve response: %w\n", err)
+	}
+
+	logrus.Printf(fmt.Sprintf("%d uploaded", response.Size)
 }
