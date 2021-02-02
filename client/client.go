@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"path/filepath"
@@ -114,7 +115,7 @@ func sendPayload(client pb.CommandServiceClient, payload string) {
 func upload(client pb.CommandServiceClient, path string) {
 	file, err := os.Open(path)
 	if err != nil {
-		logrus.Fatalf("Can not open file: %w\n", err)
+		logrus.Fatalf("[-] Can not open file: %w\n", err)
 	}
 
 	defer file.Close()
@@ -124,13 +125,16 @@ func upload(client pb.CommandServiceClient, path string) {
 
 	stream, err := client.UploadFile(ctx)
 	if err != nil {
-		logrus.Fatalf("Can not upload file: %w\n", err)
+		logrus.Fatalf("[-] Can not upload file: %w\n", err)
 	}
+
+	_, f1 := filepath.Split(path)
+	fileName := strings.ReplaceAll(f1, filepath.Ext(path), "")
 
 	request := &pb.UploadFileRequest{
 		Data: &pb.UploadFileRequest_Info{
 			Info: &pb.FileInfo{
-				Filename: "file",
+				Filename: fileName,
 				Filetype: filepath.Ext(path),
 			},
 		},
@@ -138,7 +142,7 @@ func upload(client pb.CommandServiceClient, path string) {
 
 	err = stream.Send(request)
 	if err != nil {
-		logrus.Fatal("cannot send image info to server: ", err, stream.RecvMsg(nil))
+		logrus.Fatal("[-] Cannot send image info to server: ", err, stream.RecvMsg(nil))
 	}
 
 	reader := bufio.NewReader(file)
@@ -151,7 +155,7 @@ func upload(client pb.CommandServiceClient, path string) {
 		}
 
 		if err != nil {
-			logrus.Fatalf("Can not read chunk to buffer: %w", err)
+			logrus.Fatalf("[-] Can not read chunk to buffer: %w", err)
 		}
 
 		request := &pb.UploadFileRequest{
@@ -163,14 +167,14 @@ func upload(client pb.CommandServiceClient, path string) {
 		stream.Send(request)
 
 		if err != nil {
-			logrus.Fatalf("Can not send chunk to server: %w\n", err)
+			logrus.Fatalf("[-] Can not send chunk to server: %w\n", err)
 		}
 	}
 
 	response, err := stream.CloseAndRecv()
 	if err != nil {
-		logrus.Fatalf("Can not recieve response: %w\n", err)
+		logrus.Fatalf("[-] Can not recieve response: %w\n", err)
 	}
 
-	logrus.Printf(fmt.Sprintf("%d uploaded", response.Size))
+	logrus.Printf(fmt.Sprintf("[+] %d bytes uploaded", response.Size))
 }

@@ -27,7 +27,7 @@ func NewFileStorage(fileFolder string) *FileStorage {
 }
 
 func (storage *FileStorage) Save(fileName, fileType string, data bytes.Buffer) (string, error) {
-	filePath := fmt.Sprintf("./%s/%s%s", storage.fileFolder, fileName, fileType)
+	filePath := fmt.Sprintf("%s/%s%s", storage.fileFolder, fileName, fileType)
 
 	file, err := os.Create(filePath)
 	if err != nil {

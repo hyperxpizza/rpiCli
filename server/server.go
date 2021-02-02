@@ -88,7 +88,7 @@ func (s *Server) UploadFile(stream pb.CommandService_UploadFileServer) error {
 	fileName := request.GetInfo().GetFilename()
 	fileType := request.GetInfo().GetFiletype()
 
-	logrus.Printf(fmt.Sprintf("Recieving file: %s.%s", fileName, fileType))
+	logrus.Printf(fmt.Sprintf("Recieving file: %s%s", fileName, fileType))
 
 	fileData := bytes.Buffer{}
 	fileSize := 0
@@ -163,7 +163,7 @@ func main() {
 	*/
 	grpcServer := grpc.NewServer()
 	pb.RegisterCommandServiceServer(grpcServer, &Server{
-		filestorage.NewFileStorage("/uploads"),
+		filestorage.NewFileStorage(config.FileStorage.Folder),
 	})
 	logrus.Printf("[+] Server running at: %s:%d", config.Server.Host, config.Server.Port)
 	if err := grpcServer.Serve(lis); err != nil {
