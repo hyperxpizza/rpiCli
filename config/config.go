@@ -19,10 +19,15 @@ type grpcClientConfig struct {
 	CertPath string
 }
 
+type fileStorageConfig struct {
+	Folder string
+}
+
 // Config struct
 type Config struct {
-	Server grpcServerConfig
-	Client grpcClientConfig
+	Server      grpcServerConfig
+	Client      grpcClientConfig
+	FileStorage fileStorageConfig
 }
 
 // Init function load config.yml file and initializes global configuration variables
@@ -63,6 +68,8 @@ func Init(path string) Config {
 	setConfigItem("client.port", 9999)
 	setConfigItem("client.certPath", cwd+"/cert")
 
+	setConfigItem("filestorage.folder", "uploads")
+
 	return toStruct()
 
 }
@@ -82,6 +89,9 @@ func toStruct() Config {
 		Client: grpcClientConfig{
 			Host: viper.GetString("server.host"),
 			Port: viper.GetInt64("server.port"),
+		},
+		FileStorage: fileStorageConfig{
+			Folder: viper.GetString("filestorage.folder"),
 		},
 	}
 

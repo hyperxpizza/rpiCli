@@ -172,5 +172,5 @@ func upload(client pb.CommandServiceClient, path string) {
 		logrus.Fatalf("Can not recieve response: %w\n", err)
 	}
 
-	logrus.Printf(fmt.Sprintf("%d uploaded", response.Size)
+	logrus.Printf(fmt.Sprintf("%d uploaded", response.Size))
 }
