@@ -3,8 +3,12 @@ package filestorage
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"sync"
+
+	"golang.org/x/sys/unix"
 )
 
 type FileInfo struct {
@@ -49,4 +53,41 @@ func (storage *FileStorage) Save(fileName, fileType string, data bytes.Buffer) (
 	}
 
 	return fileName, nil
+}
+
+func (storage *FileStorage) CheckCapacity() uint64 {
+	var stat unix.Statfs_t
+
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	unix.Statfs(wd, &stat)
+
+	// Available blocks * size per block = available space in bytes
+	return stat.Bavail * uint64(stat.Bsize)
+}
+
+func (storage *FileStorage) SearchFile(searchFile string) (string, error) {
+	var files []string
+
+	err := filepath.Walk(storage.fileFolder, func(path string, info os.FileInfo, err error) error {
+		files = append(files, path)
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	for _, file := range files {
+		fmt.Println(file)
+
+		if file == searchFile {
+			return file, nil
+		}
+	}
+
+	return "", fmt.Errorf("File not found")
 }

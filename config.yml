@@ -6,3 +6,5 @@ grpcClient:
   host: "localhost"
   port: 9999
   certPath: "./cert"
+fileStorage:
+  folder: "/home/hyperxpizza/programowanie/golang/rpiCli/server/uploads"
