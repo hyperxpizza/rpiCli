@@ -87,11 +87,19 @@ func (s *Server) UploadFile(stream pb.CommandService_UploadFileServer) error {
 
 	fileName := request.GetInfo().GetFilename()
 	fileType := request.GetInfo().GetFiletype()
+	fullFileSize := request.GetInfo().FullFilesize
+
+	if fullFileSize > maxFileSize {
+		return fmt.Errorf(fmt.Sprintf("File is too large: %d > %d", fullFileSize, maxFileSize))
+	}
+
+	if s.FileStorage.CheckCapacity()-fullFileSize < 0 {
+		return fmt.Errorf("Not enough free space")
+	}
 
 	logrus.Printf(fmt.Sprintf("Recieving file: %s%s", fileName, fileType))
 
 	fileData := bytes.Buffer{}
-	fileSize := 0
 
 	logrus.Println("[*] Recieving data...")
 	for {
@@ -110,12 +118,6 @@ func (s *Server) UploadFile(stream pb.CommandService_UploadFileServer) error {
 
 		logrus.Println(fmt.Sprintf("[+] Recieved a chunk with size: %d", size))
 
-		fileSize += size
-
-		if fileSize > maxFileSize {
-			return fmt.Errorf(fmt.Sprintf("File is too large: %d > %d", size, maxFileSize))
-		}
-
 		_, err = fileData.Write(chunk)
 		if err != nil {
 			return err
@@ -129,7 +131,7 @@ func (s *Server) UploadFile(stream pb.CommandService_UploadFileServer) error {
 
 	response := &pb.UploadFileResponse{
 		Id:    name,
-		Size:  uint32(fileSize),
+		Size:  uint32(fullFileSize),
 		Error: nil,
 	}
 

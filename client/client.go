@@ -113,12 +113,18 @@ func sendPayload(client pb.CommandServiceClient, payload string) {
 }
 
 func upload(client pb.CommandServiceClient, path string) {
+	//open file
 	file, err := os.Open(path)
 	if err != nil {
 		logrus.Fatalf("[-] Can not open file: %w\n", err)
 	}
-
 	defer file.Close()
+
+	//get full size of file
+	info, err := os.Stat("./vap.jpg")
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -134,8 +140,9 @@ func upload(client pb.CommandServiceClient, path string) {
 	request := &pb.UploadFileRequest{
 		Data: &pb.UploadFileRequest_Info{
 			Info: &pb.FileInfo{
-				Filename: fileName,
-				Filetype: filepath.Ext(path),
+				Filename:     fileName,
+				Filetype:     filepath.Ext(path),
+				FullFilesize: uint64(info.Size()),
 			},
 		},
 	}

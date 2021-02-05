@@ -24,7 +24,7 @@ message Error {
 message FileInfo {
     string filename = 1;
     string filetype = 2;
-    uint32 fullFilesize = 3;
+    uint64 fullFilesize = 3;
 }
 
 message UploadFileRequest {
