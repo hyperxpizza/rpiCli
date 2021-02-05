@@ -81,11 +81,12 @@ func (storage *FileStorage) SearchFile(searchFile string) (string, error) {
 		return "", err
 	}
 
+	searchFile = fmt.Sprintf("%s/%s", storage.fileFolder, searchFile)
+
 	for _, file := range files {
-		fmt.Println(file)
 
 		if file == searchFile {
-			return fmt.Sprintf("%s/%s", storage.fileFolder, file), nil
+			return file, nil
 		}
 	}
 

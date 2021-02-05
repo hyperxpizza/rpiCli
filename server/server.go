@@ -80,7 +80,7 @@ func (s *Server) ExecuteCommand(request *pb.ExecuteCommandRequest, stream pb.Com
 	return nil
 }
 
-func (s *Server) DownloadFile(request pb.DownloadFileRequest, stream pb.CommandService_DownloadFileServer) error {
+func (s *Server) DownloadFile(request *pb.DownloadFileRequest, stream pb.CommandService_DownloadFileServer) error {
 	// check if file exists in filestorage folder
 	fullFilePath, err := s.FileStorage.SearchFile(request.Filename)
 	if err != nil {
@@ -132,9 +132,11 @@ func (s *Server) UploadFile(stream pb.CommandService_UploadFileServer) error {
 	fileType := request.GetInfo().GetFiletype()
 	fullFileSize := request.GetInfo().FullFilesize
 
-	if fullFileSize > maxFileSize {
-		return fmt.Errorf(fmt.Sprintf("File is too large: %d > %d", fullFileSize, maxFileSize))
-	}
+	/*
+		if fullFileSize > maxFileSize {
+			return fmt.Errorf(fmt.Sprintf("File is too large: %d > %d", fullFileSize, maxFileSize))
+		}
+	*/
 
 	if s.FileStorage.CheckCapacity()-fullFileSize < 0 {
 		return fmt.Errorf("Not enough free space")

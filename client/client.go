@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"github.com/hyperxpizza/rpiCli/config"
 	pb "github.com/hyperxpizza/rpiCli/grpc"
 	"github.com/hyperxpizza/rpiCli/helpers"
+	"github.com/prometheus/common/log"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -24,12 +26,16 @@ var interactive *bool
 var fileOutput *string
 var fileInput *string
 var fileUpload *string
+var fileDownload *string
+var savePath *string
 
 func init() {
 	interactive = flag.Bool("interactive", false, "If set, run client in an interactive mode.")
 	fileOutput = flag.String("fileOutput", "", "Save output to file. Example: --fileOutput=example.txt")
 	fileInput = flag.String("fileInput", "", "Run bash from input file. Example: --fileInput=script.sh")
 	fileUpload = flag.String("fileUpload", "", "Upload file. Example: --fileUpload=/path/to/file")
+	fileDownload = flag.String("fileDownload", "", "Download file. Example: --fileDownload=file.extension")
+	savePath = flag.String("savePath", "", "Path for file saving. Example: --savePath=/path/to/destination/file.extension")
 
 	flag.Parse()
 }
@@ -64,6 +70,12 @@ func main() {
 		sendPayload(client, payload)
 	} else if *fileUpload != "" {
 		upload(client, *fileUpload)
+	} else if *fileDownload != "" {
+		if *savePath == "" {
+			log.Fatalln("Path for saving not specified")
+		}
+
+		downloadFile(client, *savePath, *fileDownload)
 	}
 
 }
@@ -121,7 +133,7 @@ func upload(client pb.CommandServiceClient, path string) {
 	defer file.Close()
 
 	//get full size of file
-	info, err := os.Stat("./vap.jpg")
+	info, err := os.Stat("./court.png")
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -184,4 +196,47 @@ func upload(client pb.CommandServiceClient, path string) {
 	}
 
 	logrus.Printf(fmt.Sprintf("[+] %d bytes uploaded", response.Size))
+}
+
+func downloadFile(client pb.CommandServiceClient, destinationPath, fileName string) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	request := pb.DownloadFileRequest{
+		Filename: fileName,
+	}
+
+	stream, err := client.DownloadFile(ctx, &request)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	fileData := bytes.Buffer{}
+
+	for {
+		response, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		_, err = fileData.Write(response.ChunkData)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	file, err := os.Create(destinationPath + "/" + fileName)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	_, err = fileData.WriteTo(file)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 }
