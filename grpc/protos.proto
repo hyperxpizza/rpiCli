@@ -5,6 +5,7 @@ option go_package = "github.com/hyperxpizza/rpiCli/grpc";
 service CommandService {
     rpc ExecuteCommand(ExecuteCommandRequest) returns (stream ExecuteCommandResponse) {};
     rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse) {};
+    rpc DownloadFile(DownloadFileRequest) returns (stream DownlaodFileRespose) {};
 }
 
 message ExecuteCommandRequest {
@@ -38,4 +39,12 @@ message UploadFileResponse {
     string id = 1;
     uint32 size =2;
     Error error = 3; 
+}
+
+message DownloadFileRequest {
+    string filename = 1;
+}
+
+message DownlaodFileRespose {
+    bytes chunk_data = 1;
 }

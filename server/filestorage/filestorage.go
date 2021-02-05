@@ -85,7 +85,7 @@ func (storage *FileStorage) SearchFile(searchFile string) (string, error) {
 		fmt.Println(file)
 
 		if file == searchFile {
-			return file, nil
+			return fmt.Sprintf("%s/%s", storage.fileFolder, file), nil
 		}
 	}
 

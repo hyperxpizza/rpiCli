@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -74,6 +75,48 @@ func (s *Server) ExecuteCommand(request *pb.ExecuteCommandRequest, stream pb.Com
 		logrus.Println("cmd wait error")
 		logrus.Println(err)
 		return err
+	}
+
+	return nil
+}
+
+func (s *Server) DownloadFile(request pb.DownloadFileRequest, stream pb.CommandService_DownloadFileServer) error {
+	// check if file exists in filestorage folder
+	fullFilePath, err := s.FileStorage.SearchFile(request.Filename)
+	if err != nil {
+		return err
+	}
+
+	//open file
+	file, err := os.Open(fullFilePath)
+	if err != nil {
+		logrus.Fatalf("Can not open file: %v\n", err)
+		return err
+	}
+
+	reader := bufio.NewReader(file)
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := reader.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			logrus.Fatalf("[-] Can not read chunk to buffer: %w", err)
+			return err
+		}
+
+		response := &pb.DownlaodFileRespose{
+			ChunkData: buffer[:n],
+		}
+
+		err = stream.Send(response)
+		if err != nil {
+			logrus.Fatalf("[-] Can not send chunk to server: %w\n", err)
+			return err
+		}
 	}
 
 	return nil

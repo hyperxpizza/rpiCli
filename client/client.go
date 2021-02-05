@@ -171,7 +171,7 @@ func upload(client pb.CommandServiceClient, path string) {
 			},
 		}
 
-		stream.Send(request)
+		err = stream.Send(request)
 
 		if err != nil {
 			logrus.Fatalf("[-] Can not send chunk to server: %w\n", err)
