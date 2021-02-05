@@ -199,6 +199,7 @@ func upload(client pb.CommandServiceClient, path string) {
 }
 
 func downloadFile(client pb.CommandServiceClient, destinationPath, fileName string) {
+	logrus.Println("[*] Downloading...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -224,6 +225,7 @@ func downloadFile(client pb.CommandServiceClient, destinationPath, fileName stri
 			logrus.Fatal(err)
 		}
 
+		logrus.Printf("[*] Recieved %d bytes\n", len(response.ChunkData))
 		_, err = fileData.Write(response.ChunkData)
 		if err != nil {
 			logrus.Fatal(err)
@@ -239,4 +241,6 @@ func downloadFile(client pb.CommandServiceClient, destinationPath, fileName stri
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
+	logrus.Printf("[+] Downloading finished. File saved in: %s\n", destinationPath+"/"+fileName)
 }

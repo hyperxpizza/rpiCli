@@ -111,6 +111,7 @@ func (s *Server) DownloadFile(request *pb.DownloadFileRequest, stream pb.Command
 		response := &pb.DownlaodFileRespose{
 			ChunkData: buffer[:n],
 		}
+		logrus.Printf("[*] Sending %d bytes of data", len(buffer[:n]))
 
 		err = stream.Send(response)
 		if err != nil {
