@@ -35,7 +35,7 @@ func init() {
 	fileInput = flag.String("fileInput", "", "Run bash from input file. Example: --fileInput=script.sh")
 	fileUpload = flag.String("fileUpload", "", "Upload file. Example: --fileUpload=/path/to/file")
 	fileDownload = flag.String("fileDownload", "", "Download file. Example: --fileDownload=file.extension")
-	savePath = flag.String("savePath", "", "Path for file saving. Example: --savePath=/path/to/destination/file.extension")
+	savePath = flag.String("savePath", "", "Path for file saving. Example: --savePath=/path/to/destination")
 
 	flag.Parse()
 }
